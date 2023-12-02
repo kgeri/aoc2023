@@ -1,14 +1,32 @@
+using System.Text.RegularExpressions;
+
 namespace aoc2023;
 
-class Solution1
+partial class Solution1
 {
-    static readonly Func<string, IEnumerable<char>> Numbers = line => line.ToCharArray().Where(c => char.IsNumber(c));
-
+    static readonly string NumberExpr = @"(\d|one|two|three|four|five|six|seven|eight|nine)";
+    static int ToNumber(string line, bool first)
+    {
+        Regex regex = new(NumberExpr, first ? RegexOptions.None : RegexOptions.RightToLeft);
+        return regex.Match(line).Groups[1].Value switch
+        {
+            "one" => 1,
+            "two" => 2,
+            "three" => 3,
+            "four" => 4,
+            "five" => 5,
+            "six" => 6,
+            "seven" => 7,
+            "eight" => 8,
+            "nine" => 9,
+            string d => int.Parse(d)
+        };
+    }
 
     static void Main(string[] args)
     {
         var result = File.ReadAllLines("inputs/day1.txt")
-        .Select(line => Numbers(line).First().ToString() + Numbers(line).Last().ToString())
+        .Select(line => ToNumber(line, true).ToString() + ToNumber(line, false))
         .Select(int.Parse)
         .Sum();
 
