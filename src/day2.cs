@@ -13,12 +13,16 @@ class Solution
         .ToList();
 
         Selection limit = new(new Dictionary<string, int> { ["red"] = 12, ["green"] = 13, ["blue"] = 14 });
-        var result = (from g in games
-                      where g.Cubes.All(c => c.Below(limit))
-                      select g.ID).Sum();
+        var result1 = (from g in games
+                       where g.Cubes.All(c => c.Below(limit))
+                       select g.ID).Sum();
+        Console.WriteLine(result1);
 
-
-        Console.WriteLine(result);
+        var result2 = games
+        .Select(g => g.FewestPossible())
+        .Select(s => s.Power)
+        .Sum();
+        Console.WriteLine(result2);
     }
 }
 
@@ -32,6 +36,13 @@ record Game(int ID, List<Selection> Cubes)
         .Select(Selection.Parse)
         .ToList();
         return new(id, cubes);
+    }
+
+    public Selection FewestPossible()
+    {
+        var colorToMaxCount = Cubes.SelectMany(c => c.ColorToCount.Keys).Distinct()
+        .ToDictionary(c => c, c => Cubes.Max(s => s.ColorToCount.GetValueOrDefault(c, 0)));
+        return new(colorToMaxCount);
     }
 
     public override string ToString()
@@ -51,6 +62,8 @@ record Selection(Dictionary<string, int> ColorToCount)
         }
         return new(colorCount);
     }
+
+    public int Power => ColorToCount.Values.Aggregate(1, (a, b) => a * b);
 
     public bool Below(Selection limit)
     {
