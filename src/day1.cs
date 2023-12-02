@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 
-namespace aoc2023;
+namespace aoc2023.day1;
 
-partial class Solution1
+partial class Solution
 {
     static readonly string NumberExpr = @"(\d|one|two|three|four|five|six|seven|eight|nine)";
     static int ToNumber(string line, bool first)
