@@ -12,7 +12,11 @@ class Solution
         .Select(p => p.Value)
         .Sum();
 
-        Console.WriteLine(result1);
+        var result2 = schematic.GearPartPairs()
+        .Select(gp => gp.Item1.Value * gp.Item2.Value)
+        .Sum();
+
+        Console.WriteLine(result2);
     }
 }
 
@@ -41,12 +45,28 @@ class Schematic
         return parts.FindAll(IsValidPart);
     }
 
+    internal IEnumerable<(Part, Part)> GearPartPairs()
+    {
+        foreach (var gc in GearCoordinates())
+        {
+            var parts = grid.NeighborsAndDiagonals(gc).SelectMany(GetPartsAt).Distinct();
+            if (parts.Count() == 2)
+            {
+                yield return (parts.First(), parts.Last());
+            }
+        }
+    }
+
     private bool IsValidPart(Part p)
     {
         return p.Coordinates().Any(c => grid.NeighborsAndDiagonals(c).Any(nc => IsSymbol(grid.ValueAt(nc))));
     }
 
     private static bool IsSymbol(char value) => value != '.' && value != default && !char.IsNumber(value);
+
+    public IEnumerable<Coordinate> GearCoordinates() => grid.Iterate2D().Where(c => grid.ValueAt(c) == '*');
+
+    private IEnumerable<Part> GetPartsAt(Coordinate c) => parts.Where(p => p.Coordinates().Contains(c)).Distinct();
 
     public override string ToString()
     {

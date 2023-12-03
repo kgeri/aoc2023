@@ -11,6 +11,17 @@ public static class ArrayExtensions
             : default;
     }
 
+    public static IEnumerable<Coordinate> Iterate2D<T>(this T[][] array)
+    {
+        for (int y = 0; y < array.Length; y++)
+        {
+            for (int x = 0; x < array[y].Length; x++)
+            {
+                yield return new(x, y);
+            }
+        }
+    }
+
     public static IEnumerable<Coordinate> NeighborsAndDiagonals<T>(this T[][] array, Coordinate c)
     {
         yield return new(c.X - 1, c.Y);
