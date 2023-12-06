@@ -33,4 +33,11 @@ public static class ArrayExtensions
         yield return new(c.X, c.Y + 1);
         yield return new(c.X - 1, c.Y + 1);
     }
+
+    public static IEnumerable<(T a, T b)> ZipWithNext<T>(this IEnumerable<T> source)
+    {
+        return source.Where((_, i) => i % 2 == 0)
+            .Zip(source.Where((_, i) => i % 2 == 1),
+            (a, b) => (a, b));
+    }
 }

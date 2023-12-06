@@ -1,3 +1,4 @@
+using System.Text;
 
 namespace aoc2023.day5;
 
@@ -6,45 +7,90 @@ class Solution
     static void Main(string[] args)
     {
         var sections = File.ReadAllText("inputs/day5.txt").Split("\n\n");
-        var seeds = sections[0].Replace("seeds: ", "").Split(" ").Select(long.Parse).ToList();
+        var seedValues = sections[0].Replace("seeds: ", "").Split(" ")
+            .Select(long.Parse).ToList();
+
+        // Part1
+        // var seeds = seedValues.Select(s => new Range(s, s));
+
+        // Part 2
+        var seeds = seedValues.ZipWithNext()
+            .Select(item => new Range(item.a, item.a + item.b - 1));
+
         var mappings = sections.Skip(1).Select(Mapping.Parse).ToList();
 
-        long result1 = long.MaxValue;
-        foreach (var seed in seeds)
+        IEnumerable<Range> ranges = seeds;
+        foreach (var mapping in mappings)
         {
-            var location = seed;
-            foreach (var mapping in mappings) location = mapping.MapToDest(location);
-            result1 = Math.Min(result1, location);
+            ranges = ranges.SelectMany(mapping.Transform);
         }
+
+        var result1 = ranges.Min(s => s.Start);
 
         Console.WriteLine(result1);
     }
 }
 
-record Mapping(string Name, List<MapFunction> Mappers)
+record Range(long Start, long End)
 {
-    private static readonly MapFunction DefaultMapFunction = new(0, 0, long.MaxValue);
+    internal Range? Intersect(Range range)
+    {
+        if (Start > range.End || End < range.Start) return null;
+        var start = Math.Max(Start, range.Start);
+        var end = Math.Min(End, range.End);
+        return new Range(start, end);
+    }
+}
 
+record Mapping(string Name, List<Shift> Shifts)
+{
     public static Mapping Parse(string input)
     {
         var lines = input.Split("\n", StringSplitOptions.RemoveEmptyEntries);
         var name = lines[0].Split(" map:")[0];
-        var mappers = lines.Skip(1).Select(MapFunction.Parse).Append(DefaultMapFunction).ToList();
-        return new(name, mappers);
+        var shifts = lines.Skip(1)
+            .Select(Shift.Parse)
+            .OrderBy(s => s.Source.Start)
+            .ToList();
+        var firstShiftStart = shifts.First().Source.Start;
+        var lastShiftEnd = shifts.Last().Source.End;
+        shifts = shifts
+            .Prepend(new Shift(new(0, firstShiftStart - 1), 0))
+            .Append(new Shift(new(lastShiftEnd + 1, long.MaxValue), 0))
+            .ToList();
+        return new(name, shifts);
     }
 
-    public long MapToDest(long source) => Mappers.First(mapper => mapper.IsInRange(source)).MapToDest(source);
+    public IEnumerable<Range> Transform(Range range)
+    {
+        foreach (var shift in Shifts)
+        {
+            var intersection = shift.Source.Intersect(range);
+            if (intersection == null) continue;
+            yield return new Range(intersection.Start + shift.Value, intersection.End + shift.Value);
+        }
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"{Name} map:");
+        foreach (var shift in Shifts)
+        {
+            sb.AppendLine($"{shift.Source.Start} -> {shift.Source.End} + {shift.Value}");
+        }
+        return sb.ToString();
+    }
 }
 
-class MapFunction(long destRangeStart, long sourceRangeStart, long length)
+record Shift(Range Source, long Value)
 {
-    internal static MapFunction Parse(string line)
+    internal static Shift Parse(string line)
     {
         var parts = line.Split(" ").Select(long.Parse).ToList();
-        return new(parts[0], parts[1], parts[2]);
+        var destStart = parts[0];
+        var sourceStart = parts[1];
+        var length = parts[2];
+        return new(new(sourceStart, sourceStart + length - 1), destStart - sourceStart);
     }
-
-    public bool IsInRange(long source) => source >= sourceRangeStart && source < sourceRangeStart + length;
-
-    public long MapToDest(long source) => destRangeStart + (source - sourceRangeStart);
 }
