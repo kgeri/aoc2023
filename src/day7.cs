@@ -11,9 +11,9 @@ class Solution
             .ToList();
 
         deals.Sort((d1, d2) => Hand.ByRank(d1.Hand, d2.Hand));
-        var result1 = deals.Select((d, i) => d.Bid * (i + 1)).Sum();
+        var result2 = deals.Select((d, i) => d.Bid * (i + 1)).Sum();
 
-        Console.WriteLine(result1);
+        Console.WriteLine(result2);
     }
 }
 
@@ -23,27 +23,44 @@ record Deal(Hand Hand, long Bid)
     {
         var parts = line.Split(" ");
         var bid = int.Parse(parts[1]);
-        var cards = parts[0].ToCharArray();
-        return new(new(cards), bid);
+        return new(new(parts[0]), bid);
     }
 }
 
 class Hand
 {
-    private static readonly Dictionary<char, int> Strength = "AKQJT98765432"
+    private static readonly Dictionary<char, int> Strength = "AKQT98765432J" // Note: moved J at the end for Part 2
         .ToCharArray()
         .Select((c, i) => (c, i))
         .ToDictionary(it => it.c, it => 13 - it.i);
 
-    private readonly char[] cards;
+    private readonly string cards;
     private readonly int score;
 
-    public Hand(char[] cards)
+    public Hand(string cards)
     {
         if (cards.Length != 5) throw new ArgumentException("A hand must have 5 cards");
         this.cards = cards;
 
-        var groups = cards.GroupBy(c => c);
+        // Part 2: replacing J with whatever's the most common
+        string replaced;
+        if (cards == "JJJJJ")
+        {
+            // All are Js - replacing with highest card
+            replaced = "AAAAA";
+        }
+        else
+        {
+            // At least one non-J - replacing with the most common other card
+            var mostCommon = cards.GroupBy(c => c)
+                .Where(g => g.Key != 'J')
+                .OrderByDescending(g => g.Count())
+                .First().Key;
+            replaced = cards.Replace('J', mostCommon);
+        }
+        // end of Part 2 hack
+
+        var groups = replaced.GroupBy(c => c);
         if (groups.Count() == 1)
             score = 7; // Five of a kind
         else if (groups.Any(g => g.Count() == 4))
@@ -59,7 +76,7 @@ class Hand
         else if (groups.Count() == 5)
             score = 1; // High card
         else
-            throw new NotImplementedException($"Unknown hand: {new string(cards)}");
+            throw new NotImplementedException($"Unknown hand: {new string(replaced)}");
     }
 
     public override string ToString() => $"{new string(cards)} = {score}";
@@ -77,7 +94,7 @@ class Hand
                 if (Strength[ac] < Strength[bc]) return -1;
                 else if (Strength[ac] > Strength[bc]) return 1;
             }
-            throw new NotImplementedException($"Impossible to order: {a} vs {b}");
+            return 0;
         }
     }
 }
