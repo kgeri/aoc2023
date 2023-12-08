@@ -7,28 +7,45 @@ class Solution
 {
     static void Main(string[] args)
     {
-        var lines = File.ReadAllLines("inputs/day8.txt");
-        var instructions = lines[0];
+        var map = NodeMap.Parse(File.ReadAllLines("inputs/day8.txt"));
+        var result2 = map.TotalStepsToEnd();
+        Console.WriteLine(result2);
+    }
+}
+
+record NodeMap(char[] Instructions, Dictionary<string, Node> NameToNode)
+{
+    internal static NodeMap Parse(string[] lines)
+    {
+        var instructions = lines[0].ToCharArray();
         var nodes = lines[2..].Select(Node.Parse);
         var nameToNode = nodes.ToDictionary(node => node.Name, node => node);
+        return new(instructions, nameToNode);
+    }
 
-        var current = nameToNode["AAA"];
-        int step = 0;
-        for (; current.Name != "ZZZ"; step++)
+    public long TotalStepsToEnd()
+    {
+        var startNodes = NameToNode.Where(kvp => kvp.Key.EndsWith('A')).Select(kvp => kvp.Value);
+        return startNodes
+            .Select(StepsToEnd)
+            .LCM();
+    }
+
+    private long StepsToEnd(Node current)
+    {
+        for (long i = 0; ; i++)
         {
-            switch (instructions[step % instructions.Length])
+            if (current.Name.EndsWith('Z')) return i;
+            switch (Instructions[i % Instructions.Length])
             {
                 case 'L':
-                    current = nameToNode[current.Left];
+                    current = NameToNode[current.Left];
                     break;
                 case 'R':
-                    current = nameToNode[current.Right];
+                    current = NameToNode[current.Right];
                     break;
             }
         }
-
-
-        Console.WriteLine(step);
     }
 }
 

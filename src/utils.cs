@@ -2,6 +2,25 @@ namespace aoc2023;
 
 public record Coordinate(int X, int Y) { }
 
+public static class Maths
+{
+    public static long LCM(long a, long b)
+    {
+        return (a / GCF(a, b)) * b;
+    }
+
+    public static long GCF(long a, long b)
+    {
+        while (b != 0)
+        {
+            long temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+}
+
 public static class ArrayExtensions
 {
     public static T? ValueAt<T>(this T[][] array, Coordinate c)
@@ -39,5 +58,10 @@ public static class ArrayExtensions
         return source.Where((_, i) => i % 2 == 0)
             .Zip(source.Where((_, i) => i % 2 == 1),
             (a, b) => (a, b));
+    }
+
+    public static long LCM(this IEnumerable<long> source)
+    {
+        return source.Aggregate(Maths.LCM);
     }
 }
