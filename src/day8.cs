@@ -1,6 +1,3 @@
-
-
-
 namespace aoc2023.day8;
 
 class Solution
