@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 
 namespace aoc2023.day10;
 
@@ -7,14 +8,19 @@ class Solution
     static void Main(string[] args)
     {
         var grid = new PipeGrid(File.ReadAllLines("inputs/day10.txt"));
-        var result1 = grid.StepsToFurthest();
+        Console.WriteLine(grid);
 
+        var result1 = grid.StepsToFurthest();
         Console.WriteLine(result1);
+
+        var result2 = grid.AreaInside(grid.Loop()).Count;
+        Console.WriteLine(result2);
     }
 }
 
-class Node(char type)
+class Node(char type, Coordinate coordinate)
 {
+    internal readonly Coordinate Coordinate = coordinate;
     internal readonly char Type = type;
     private Node? N;
     private Node? S;
@@ -81,7 +87,7 @@ class PipeGrid
         var grid = new Node[lines.Length, lines[0].Length];
         for (int y = 0; y < lines.Length; y++)
             for (int x = 0; x < lines[y].Length; x++)
-                grid[y, x] = new(lines[y][x]);
+                grid[y, x] = new(lines[y][x], new(x, y));
 
         foreach (var c in grid.Iterate2D())
         {
@@ -139,5 +145,70 @@ class PipeGrid
     {
         var dist = Graphs.Dijkstra(nodes, start, n => n.Neighbors().Select(n => (n, 1.0)));
         return dist.Select(d => d.Value).Where(d => d != double.PositiveInfinity).Max();
+    }
+
+    public List<Node> Loop()
+    {
+        List<Node> result = [];
+        Node current = start;
+        Node previous = start;
+        do
+        {
+            result.Add(current);
+            var next = current.Neighbors().Where(n => n != previous).First();
+            previous = current;
+            current = next;
+        } while (current != start);
+        return result;
+    }
+
+    internal List<Coordinate> AreaInside(List<Node> nodeLoop)
+    {
+        List<Coordinate> loop = nodeLoop.Select(n => n.Coordinate).ToList();
+        var max = loop.Aggregate((c1, c2) => new(Math.Max(c1.X, c2.X), Math.Max(c1.Y, c2.Y)));
+
+        List<Coordinate> area = [];
+        for (int y = -1; y < max.Y + 1; y++)
+        {
+            for (int x = -1; x < max.X + 1; x++)
+            {
+                Coordinate c = new(x, y);
+                if (loop.Contains(c)) continue;
+                if (c.IsInside(loop)) area.Add(c);
+            }
+        }
+        return area;
+    }
+
+    // For fun (and debugging :) )
+    public override string ToString()
+    {
+        static char prettify(char c) => c switch
+        {
+            'L' => '└',
+            'J' => '┘',
+            '7' => '┐',
+            'F' => '┌',
+            'S' => '▫',
+            '|' => '│',
+            '-' => '─',
+            _ => c
+        };
+
+        var areaInside = AreaInside(Loop()).ToHashSet();
+
+        Coordinate max = nodes.Select(n => n.Coordinate).Aggregate((c1, c2) => new Coordinate(Math.Max(c1.X, c2.X), Math.Max(c1.Y, c2.Y)));
+        var sb = new StringBuilder();
+        for (int y = 0; y < max.Y + 1; y++)
+        {
+            for (int x = 0; x < max.X + 1; x++)
+            {
+                var type = nodes.Where(n => n.Coordinate.X == x && n.Coordinate.Y == y).Select(n => prettify(n.Type)).FirstOrDefault(' ');
+                if (areaInside.Contains(new(x, y))) type = '█';
+                sb.Append(type);
+            }
+            sb.AppendLine();
+        }
+        return sb.ToString();
     }
 }

@@ -10,6 +10,20 @@ public record Coordinate(int X, int Y)
     public Coordinate NeighborSouthEast() => new(X + 1, Y + 1);
     public Coordinate NeighborSouth() => new(X, Y + 1);
     public Coordinate NeighborSouthWest() => new(X - 1, Y + 1);
+
+    public bool IsInside(List<Coordinate> polygon)
+    {
+        bool isInside = false;
+        for (int i = 0, j = polygon.Count - 1; i < polygon.Count; i++)
+        {
+            var ci = polygon[i];
+            var cj = polygon[j];
+            bool intersects = cj.Y > Y ^ ci.Y > Y && X < (ci.X - cj.X) * (Y - cj.Y) / (ci.Y - cj.Y) + cj.X;
+            isInside ^= intersects;
+            j = i;
+        }
+        return isInside;
+    }
 }
 
 public static class Dictionaries
@@ -51,7 +65,7 @@ public static class ArrayExtensions
 
     public static bool ContainsCoordinate<T>(this T[,] array, Coordinate c)
     {
-        return c.Y >= 0 && c.Y < array.GetLength(1) && c.X >= 0 && c.X < array.GetLength(0);
+        return c.Y >= 0 && c.Y < array.GetLength(0) && c.X >= 0 && c.X < array.GetLength(1);
     }
 
     public static T? ValueAt<T>(this T[][] array, Coordinate c)
@@ -77,16 +91,9 @@ public static class ArrayExtensions
 
     public static IEnumerable<Coordinate> Iterate2D<T>(this T[,] array)
     {
-        for (int y = 0; y < array.GetLength(1); y++)
-            for (int x = 0; x < array.GetLength(0); x++)
+        for (int y = 0; y < array.GetLength(0); y++)
+            for (int x = 0; x < array.GetLength(1); x++)
                 yield return new(x, y);
-    }
-
-    public static void ForEach<T>(this T[,] array, Action<T> action)
-    {
-        for (int y = 0; y < array.GetLength(1); y++)
-            for (int x = 0; x < array.GetLength(0); x++)
-                action(array[y, x]);
     }
 
     public static IEnumerable<Coordinate> NeighborsAndDiagonals<T>(this T[][] array, Coordinate c)
