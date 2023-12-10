@@ -1,6 +1,27 @@
 namespace aoc2023;
 
-public record Coordinate(int X, int Y) { }
+public record Coordinate(int X, int Y)
+{
+    public Coordinate NeighborWest() => new(X - 1, Y);
+    public Coordinate NeighborNorthWest() => new(X - 1, Y - 1);
+    public Coordinate NeighborNorth() => new(X, Y - 1);
+    public Coordinate NeighborNorthEast() => new(X + 1, Y - 1);
+    public Coordinate NeighborEast() => new(X + 1, Y);
+    public Coordinate NeighborSouthEast() => new(X + 1, Y + 1);
+    public Coordinate NeighborSouth() => new(X, Y + 1);
+    public Coordinate NeighborSouthWest() => new(X - 1, Y + 1);
+}
+
+public static class Dictionaries
+{
+    public static V ComputeIfAbsent<K, V>(this IDictionary<K, V> dict, K key, Func<K, V> valueFactory)
+    {
+        if (dict.TryGetValue(key, out var value)) return value;
+        value = valueFactory(key);
+        dict.Add(key, value);
+        return value;
+    }
+}
 
 public static class Maths
 {
@@ -23,34 +44,61 @@ public static class Maths
 
 public static class ArrayExtensions
 {
+    public static bool ContainsCoordinate<T>(this T[][] array, Coordinate c)
+    {
+        return c.Y >= 0 && c.Y < array.Length && c.X >= 0 && c.X < array[c.Y].Length;
+    }
+
+    public static bool ContainsCoordinate<T>(this T[,] array, Coordinate c)
+    {
+        return c.Y >= 0 && c.Y < array.GetLength(1) && c.X >= 0 && c.X < array.GetLength(0);
+    }
+
     public static T? ValueAt<T>(this T[][] array, Coordinate c)
     {
-        return c.Y >= 0 && c.Y < array.Length && c.X >= 0 && c.X < array[c.Y].Length
+        return array.ContainsCoordinate(c)
             ? array[c.Y][c.X]
+            : default;
+    }
+
+    public static T? ValueAt<T>(this T[,] array, Coordinate c)
+    {
+        return array.ContainsCoordinate(c)
+            ? array[c.Y, c.X]
             : default;
     }
 
     public static IEnumerable<Coordinate> Iterate2D<T>(this T[][] array)
     {
         for (int y = 0; y < array.Length; y++)
-        {
             for (int x = 0; x < array[y].Length; x++)
-            {
                 yield return new(x, y);
-            }
-        }
+    }
+
+    public static IEnumerable<Coordinate> Iterate2D<T>(this T[,] array)
+    {
+        for (int y = 0; y < array.GetLength(1); y++)
+            for (int x = 0; x < array.GetLength(0); x++)
+                yield return new(x, y);
+    }
+
+    public static void ForEach<T>(this T[,] array, Action<T> action)
+    {
+        for (int y = 0; y < array.GetLength(1); y++)
+            for (int x = 0; x < array.GetLength(0); x++)
+                action(array[y, x]);
     }
 
     public static IEnumerable<Coordinate> NeighborsAndDiagonals<T>(this T[][] array, Coordinate c)
     {
-        yield return new(c.X - 1, c.Y);
-        yield return new(c.X - 1, c.Y - 1);
-        yield return new(c.X, c.Y - 1);
-        yield return new(c.X + 1, c.Y - 1);
-        yield return new(c.X + 1, c.Y);
-        yield return new(c.X + 1, c.Y + 1);
-        yield return new(c.X, c.Y + 1);
-        yield return new(c.X - 1, c.Y + 1);
+        yield return c.NeighborWest();
+        yield return c.NeighborNorthWest();
+        yield return c.NeighborNorth();
+        yield return c.NeighborNorthEast();
+        yield return c.NeighborEast();
+        yield return c.NeighborSouthEast();
+        yield return c.NeighborSouth();
+        yield return c.NeighborSouthWest();
     }
 
     public static IEnumerable<(T a, T b)> ZipWithNext<T>(this IEnumerable<T> source)
@@ -63,5 +111,36 @@ public static class ArrayExtensions
     public static long LCM(this IEnumerable<long> source)
     {
         return source.Aggregate(Maths.LCM);
+    }
+}
+
+public static class Graphs
+{
+    public static Dictionary<T, double> Dijkstra<T>(IEnumerable<T> vertices, T start, Func<T, IEnumerable<(T v, double d)>> neighbors)
+    where T : notnull
+    {
+        var dist = new Dictionary<T, double>();
+        var prev = new Dictionary<T, T>();
+        var queue = vertices.ToHashSet();
+        foreach (var v in vertices) dist[v] = double.PositiveInfinity;
+        dist[start] = 0;
+
+        while (queue.Count > 0)
+        {
+            var u = queue.OrderBy(v => dist[v]).First();
+            queue.Remove(u);
+
+            foreach (var (v, d) in neighbors(u).Where(e => queue.Contains(e.v)))
+            {
+                var alt = dist.GetValueOrDefault(u, double.PositiveInfinity) + d;
+                if (alt < dist[v])
+                {
+                    dist[v] = alt;
+                    prev[v] = u;
+                }
+            }
+        }
+
+        return dist;
     }
 }

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace aoc2023.day9;
 
 class Solution
