@@ -7,11 +7,18 @@ class Solution
     static void Main(string[] args)
     {
         var galaxies = new Galaxies(File.ReadAllLines("inputs/day11.txt"));
-        var result1 = galaxies.Expand()
+
+        // Part 1
+        // var result1 = galaxies.Expand()
+        //     .PairwiseManhattanDistances()
+        //     .Sum();
+        // Console.WriteLine(result1);
+
+        // Part 2
+        var result2 = galaxies.Expand(1000000)
             .PairwiseManhattanDistances()
             .Sum();
-
-        Console.WriteLine(result1);
+        Console.WriteLine(result2);
     }
 }
 
@@ -26,15 +33,15 @@ class Galaxies
                 if (lines[y][x] == '#') galaxies.Add(new(number++, new(x, y)));
     }
 
-    public Galaxies Expand()
+    public Galaxies Expand(int factor = 2)
     {
         galaxies = galaxies
         .Select(g =>
         {
             var rowsWithGalaxies = galaxies.Where(g2 => g2.Coordinate.Y < g.Coordinate.Y).DistinctBy(g2 => g2.Coordinate.Y).Count();
             var colsWithGalaxies = galaxies.Where(g2 => g2.Coordinate.X < g.Coordinate.X).DistinctBy(g2 => g2.Coordinate.X).Count();
-            var newX = g.Coordinate.X - colsWithGalaxies + g.Coordinate.X;
-            var newY = g.Coordinate.Y - rowsWithGalaxies + g.Coordinate.Y;
+            var newX = (g.Coordinate.X - colsWithGalaxies) * (factor - 1) + g.Coordinate.X;
+            var newY = (g.Coordinate.Y - rowsWithGalaxies) * (factor - 1) + g.Coordinate.Y;
             return new Galaxy(g.Number, new(newX, newY));
         }).ToList();
         return this;
