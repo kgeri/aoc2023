@@ -150,4 +150,45 @@ public static class Graphs
 
         return dist;
     }
+
+    public static List<T> AStar<T>(T start, T goal, Func<T, IEnumerable<T>> neighbors, Func<T, double> heuristic, Func<T, T, double> distance)
+    where T : notnull
+    {
+        var openSet = new HashSet<T> { start };
+        var cameFrom = new Dictionary<T, T>();
+        var gScore = new Dictionary<T, double> { { start, 0.0 } };
+        var fScore = new Dictionary<T, double> { { start, heuristic(start) } };
+
+        static List<T> reconstructPath(Dictionary<T, T> cameFrom, T current)
+        {
+            List<T> totalPath = [current];
+            while (cameFrom.ContainsKey(current))
+            {
+                current = cameFrom[current];
+                totalPath.Add(current);
+            }
+            totalPath.Reverse();
+            return totalPath;
+        }
+
+        while (openSet.Count > 0)
+        {
+            var current = openSet.MinBy(n => fScore.GetValueOrDefault(n, double.PositiveInfinity))!;
+            if (current.Equals(goal)) return reconstructPath(cameFrom, current);
+
+            openSet.Remove(current);
+            foreach (var neighbor in neighbors(current))
+            {
+                var tentativeGScore = gScore.GetValueOrDefault(current, double.PositiveInfinity) + distance(current, neighbor);
+                if (tentativeGScore < gScore.GetValueOrDefault(neighbor, double.PositiveInfinity))
+                {
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentativeGScore;
+                    fScore[neighbor] = tentativeGScore + heuristic(neighbor);
+                    openSet.Add(neighbor);
+                }
+            }
+        }
+        throw new Exception("No path found");
+    }
 }
