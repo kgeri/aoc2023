@@ -1,5 +1,4 @@
-using System.Text;
-using System.Text.RegularExpressions;
+using Microsoft.VisualBasic;
 
 namespace aoc2023.day12;
 
@@ -12,46 +11,54 @@ class Solution
             .Select(springs => springs.PossibleArrangements())
             .Sum();
         Console.WriteLine(result1);
+
+        var result2 = File.ReadAllLines("inputs/day12.txt")
+            .Select(line => new Springs(line, 5))
+            .Select(springs => springs.PossibleArrangements())
+            .Sum();
+        Console.WriteLine(result2);
     }
 }
 
 class Springs
 {
     private readonly string springs;
-    private readonly Regex damagePattern;
+    private readonly int[] groups;
 
-    internal Springs(string line)
+    internal Springs(string line, int multiplier = 1)
     {
         var parts = line.Split(' ');
-        springs = parts[0].Replace('.', ' '); // Easier to regex this one :)
-
-        var groups = parts[1].Split(',').Select(int.Parse).ToArray();
-        var damages = new StringBuilder("^ *?"); // Can start with any number of good springs (`.`)
-        for (int i = 0; i < groups.Length; i++)
-        {
-            if (i > 0) damages.Append(" +"); // Having at least one good spring in between
-            for (int j = 0; j < groups[i]; j++)
-                damages.Append('#'); // Followed by a number of bad springs (`#
-        }
-        damagePattern = new(damages.Append(" *$").ToString()); // Can end with any number of good springs
+        springs = parts[0];
+        springs = string.Join("?", Enumerable.Repeat(springs, multiplier)) + ".";
+        groups = Enumerable.Repeat(parts[1].Split(',').Select(int.Parse), multiplier).SelectMany(x => x).Append(springs.Length + 1).ToArray();
     }
 
-    internal int PossibleArrangements()
+    internal long PossibleArrangements()
     {
-        int[] unknownIndices = springs.Select((c, i) => (c, i)).Where(t => t.c == '?').Select(t => t.i).ToArray();
-        int maxValue = 1 << unknownIndices.Length;
-        char[] s = springs.ToCharArray();
-        int arrangements = 0;
-        for (int i = 0; i < maxValue; i++)
+        // Disclaimer: I get the concept of memoization and vaguely understand how this works, but no clue about the edge cases...
+        var f = new long[springs.Length + 1, groups.Length + 1, springs.Length + 2];
+        f[0, 0, 0] = 1;
+        for (int i = 0; i < springs.Length; i++)
         {
-            for (int j = 0; j < unknownIndices.Length; j++)
+            for (int j = 0; j < groups.Length; j++)
             {
-                s[unknownIndices[j]] = (i & (1 << j)) > 0 ? '#' : ' ';
+                for (int k = 0; k < springs.Length + 1; k++)
+                {
+                    long cur = f[i, j, k];
+                    if (cur == 0) continue;
+                    if (springs[i] == '.' || springs[i] == '?') // Current spring is operational or unknown
+                        if (k == 0 || k == groups[j - 1]) // ... and there is no current group or current group is complete
+                            f[i + 1, j, 0] += cur; // ...then we proceed with the current group
+                    if (springs[i] == '#' || springs[i] == '?') // Current spring is broken or unknown
+                        if (k == 0) // ... and there is no current group
+                            f[i + 1, j + 1, 1] += cur; // ...then we start a new group
+                        else
+                            f[i + 1, j, k + 1] += cur; // ...otherwise we continue with the current group
+                }
             }
-            if (damagePattern.IsMatch(new string(s))) arrangements++;
         }
-        return arrangements;
+        return f[springs.Length, groups.Length - 1, 0];
     }
 
-    public override string ToString() => $"springs={springs}, damagePattern={damagePattern}";
+    public override string ToString() => $"springs={springs}, damagePattern={string.Join(',', groups)}";
 }
