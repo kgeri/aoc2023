@@ -204,3 +204,30 @@ public static class Graphs
         throw new Exception("No path found");
     }
 }
+
+// Because the semantics of BitVector32 are idiotic...
+public class BitSet
+{
+    private int value;
+
+    public static bool operator ==(BitSet a, BitSet b) => a.value == b.value;
+    public static bool operator !=(BitSet a, BitSet b) => a.value != b.value;
+
+    public bool this[int n]
+    {
+        get { return (value & (1 << n)) != 0; }
+        set
+        {
+            if (value) this.value |= 1 << n;
+            else this.value &= ~(1 << n);
+        }
+    }
+
+    public override bool Equals(object? obj)
+    {
+        var o = obj as BitSet;
+        return o is not null && value == o.value;
+    }
+    public override int GetHashCode() => value;
+    public override string ToString() => Convert.ToString(value, 2);
+}
