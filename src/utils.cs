@@ -96,6 +96,18 @@ public static class ArrayExtensions
                 yield return new(x, y);
     }
 
+    public static IEnumerable<T> Row<T>(this T[,] array, int row)
+    {
+        for (int i = 0; i < array.GetLength(1); i++)
+            yield return array[row, i];
+    }
+
+    public static IEnumerable<T> Column<T>(this T[,] array, int column)
+    {
+        for (int i = 0; i < array.GetLength(0); i++)
+            yield return array[i, column];
+    }
+
     public static IEnumerable<Coordinate> NeighborsAndDiagonals<T>(this T[][] array, Coordinate c)
     {
         yield return c.NeighborWest();

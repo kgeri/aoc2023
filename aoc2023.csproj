@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
 
     <PublishAot>true</PublishAot>
-    <StartupObject>aoc2023.day12.Solution</StartupObject>
+    <StartupObject>aoc2023.day13.Solution</StartupObject>
   </PropertyGroup>
 
 </Project>
