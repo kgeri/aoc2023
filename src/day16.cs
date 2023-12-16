@@ -9,9 +9,11 @@ class Solution
     {
         var grid = new LightGrid(File.ReadAllLines("inputs/day16.txt"));
 
-        var result1 = grid.CalculateEnergizedTiles();
-        Console.WriteLine(grid);
+        var result1 = grid.CalculateEnergizedTiles((Direction.West, new(0, 0)));
         Console.WriteLine(result1);
+
+        var result2 = grid.CalculateMostEnergizedConfiguration();
+        Console.WriteLine(result2);
     }
 }
 
@@ -35,11 +37,11 @@ class LightGrid
                 };
     }
 
-    public int CalculateEnergizedTiles()
+    public int CalculateEnergizedTiles((Direction, Coordinate) startPos)
     {
         HashSet<(Direction, Coordinate)> seen = [];
         Stack<(Direction, Coordinate)> stack = new();
-        stack.Push((Direction.West, new(0, 0)));
+        stack.Push(startPos);
 
         while (stack.TryPop(out (Direction d, Coordinate c) pos))
         {
@@ -52,7 +54,25 @@ class LightGrid
                 if (seen.Add(nextPos)) stack.Push(nextPos);
         }
 
-        return grid.Iterate2D().Where(c => grid.ValueAt(c)!.energized).Count();
+        var result = grid.Iterate2D().Where(c => grid.ValueAt(c)!.energized).Count();
+        foreach (var tile in grid) tile.energized = false; // Resetting the grid
+        return result;
+    }
+
+    public int CalculateMostEnergizedConfiguration()
+    {
+        int result = 0;
+        for (int y = 0; y < grid.GetLength(0); y++)
+        {
+            result = Math.Max(result, CalculateEnergizedTiles((Direction.West, new(0, y))));
+            result = Math.Max(result, CalculateEnergizedTiles((Direction.East, new(grid.GetLength(1) - 1, y))));
+        }
+        for (int x = 0; x < grid.GetLength(1); x++)
+        {
+            result = Math.Max(result, CalculateEnergizedTiles((Direction.North, new(x, 0))));
+            result = Math.Max(result, CalculateEnergizedTiles((Direction.South, new(x, grid.GetLength(0) - 1))));
+        }
+        return result;
     }
 
     public override string ToString()
