@@ -1,4 +1,11 @@
+using System.Text;
+
 namespace aoc2023;
+
+public enum Direction
+{
+    North, South, East, West
+}
 
 public record Coordinate(int X, int Y)
 {
@@ -58,6 +65,18 @@ public static class Maths
 
 public static class ArrayExtensions
 {
+    public static string GridToString<T>(this T[,] grid)
+    {
+        var sb = new StringBuilder();
+        for (int y = 0; y < grid.GetLength(0); y++)
+        {
+            for (int x = 0; x < grid.GetLength(1); x++)
+                sb.Append(grid[y, x]);
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+
     public static bool ContainsCoordinate<T>(this T[][] array, Coordinate c)
     {
         return c.Y >= 0 && c.Y < array.Length && c.X >= 0 && c.X < array[c.Y].Length;
