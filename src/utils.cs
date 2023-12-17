@@ -7,8 +7,47 @@ public enum Direction
     North, South, East, West
 }
 
+public static class DirectionExtensions
+{
+    public static Direction Opposite(this Direction d) => d switch
+    {
+        Direction.North => Direction.South,
+        Direction.South => Direction.North,
+        Direction.East => Direction.West,
+        Direction.West => Direction.East,
+        _ => throw new NotImplementedException(),
+    };
+
+    public static Direction Left(this Direction d) => d switch
+    {
+        Direction.North => Direction.West,
+        Direction.South => Direction.East,
+        Direction.East => Direction.North,
+        Direction.West => Direction.South,
+        _ => throw new NotImplementedException(),
+    };
+
+    public static Direction Right(this Direction d) => d switch
+    {
+        Direction.North => Direction.East,
+        Direction.South => Direction.West,
+        Direction.East => Direction.South,
+        Direction.West => Direction.North,
+        _ => throw new NotImplementedException(),
+    };
+}
+
 public record Coordinate(int X, int Y)
 {
+    public Coordinate Neighbor(Direction d) => d switch
+    {
+        Direction.North => NeighborNorth(),
+        Direction.South => NeighborSouth(),
+        Direction.East => NeighborEast(),
+        Direction.West => NeighborWest(),
+        _ => throw new NotImplementedException(),
+    };
+
     public Coordinate NeighborWest() => new(X - 1, Y);
     public Coordinate NeighborNorthWest() => new(X - 1, Y - 1);
     public Coordinate NeighborNorth() => new(X, Y - 1);
@@ -30,6 +69,13 @@ public record Coordinate(int X, int Y)
             j = i;
         }
         return isInside;
+    }
+
+    public Direction DirectionTo(Coordinate target)
+    {
+        if (X == target.X) return Y < target.Y ? Direction.South : Direction.North;
+        if (Y == target.Y) return X < target.X ? Direction.East : Direction.West;
+        throw new ArgumentException($"Can't determine direction {this} -> {target}");
     }
 }
 
@@ -75,6 +121,11 @@ public static class ArrayExtensions
             sb.AppendLine();
         }
         return sb.ToString();
+    }
+
+    public static Coordinate LastCoordinate<T>(this T[,] array)
+    {
+        return new(array.GetLength(1) - 1, array.GetLength(0) - 1);
     }
 
     public static bool ContainsCoordinate<T>(this T[][] array, Coordinate c)
@@ -181,47 +232,53 @@ public static class Graphs
 
         return dist;
     }
+}
 
-    public static List<T> AStar<T>(T start, T goal, Func<T, IEnumerable<T>> neighbors, Func<T, double> heuristic, Func<T, T, double> distance)
-    where T : notnull
+public abstract class AStar<T> where T : notnull
+{
+    private readonly Dictionary<T, T> cameFrom = [];
+
+    public List<T> FindShortestPath(T start, Predicate<T> goal)
     {
         var openSet = new HashSet<T> { start };
-        var cameFrom = new Dictionary<T, T>();
+        cameFrom.Clear();
         var gScore = new Dictionary<T, double> { { start, 0.0 } };
-        var fScore = new Dictionary<T, double> { { start, heuristic(start) } };
-
-        static List<T> reconstructPath(Dictionary<T, T> cameFrom, T current)
-        {
-            List<T> totalPath = [current];
-            while (cameFrom.ContainsKey(current))
-            {
-                current = cameFrom[current];
-                totalPath.Add(current);
-            }
-            totalPath.Reverse();
-            return totalPath;
-        }
+        var fScore = new Dictionary<T, double> { { start, Heuristic(start) } };
 
         while (openSet.Count > 0)
         {
             var current = openSet.MinBy(n => fScore.GetValueOrDefault(n, double.PositiveInfinity))!;
-            if (current.Equals(goal)) return reconstructPath(cameFrom, current);
+            if (goal.Invoke(current)) return ReconstructPath(current).Reverse().ToList();
 
             openSet.Remove(current);
-            foreach (var neighbor in neighbors(current))
+            foreach (var neighbor in Neighbors(current))
             {
-                var tentativeGScore = gScore.GetValueOrDefault(current, double.PositiveInfinity) + distance(current, neighbor);
+                var tentativeGScore = gScore.GetValueOrDefault(current, double.PositiveInfinity) + Distance(current, neighbor);
                 if (tentativeGScore < gScore.GetValueOrDefault(neighbor, double.PositiveInfinity))
                 {
                     cameFrom[neighbor] = current;
                     gScore[neighbor] = tentativeGScore;
-                    fScore[neighbor] = tentativeGScore + heuristic(neighbor);
+                    fScore[neighbor] = tentativeGScore + Heuristic(neighbor);
                     openSet.Add(neighbor);
                 }
             }
         }
         throw new Exception("No path found");
     }
+
+    protected IEnumerable<T> ReconstructPath(T current)
+    {
+        yield return current;
+        while (cameFrom.ContainsKey(current))
+        {
+            current = cameFrom[current];
+            yield return current;
+        }
+    }
+
+    protected abstract double Heuristic(T current);
+    protected abstract IEnumerable<T> Neighbors(T current);
+    protected abstract double Distance(T current, T neighbor);
 }
 
 // Because the semantics of BitVector32 are idiotic...
