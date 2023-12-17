@@ -5,9 +5,10 @@ class Solution
 {
     static void Main(string[] args)
     {
-        var result1 = new HeatLossAStar(File.ReadAllLines("inputs/day17.txt"))
+        // Note: this ran for quite a while... should probably tweak the heuristics
+        var result = new HeatLossAStar(File.ReadAllLines("inputs/day17.txt"))
             .MinHeatLoss();
-        Console.WriteLine(result1);
+        Console.WriteLine(result);
     }
 }
 
@@ -32,20 +33,25 @@ class HeatLossAStar : AStar<State>
 
     protected override IEnumerable<State> Neighbors(State c)
     {
-        if (c.SameDirSteps < 3)
+        // if (c.SameDirSteps < 3) // Part 1
+        if (c.SameDirSteps < 10) // Part 2
             yield return new(c.Position.Neighbor(c.LastDir), c.LastDir, c.SameDirSteps + 1);
 
         Direction left = c.LastDir.Left();
-        yield return new(c.Position.Neighbor(left), left, 1);
-
         Direction right = c.LastDir.Right();
-        yield return new(c.Position.Neighbor(right), right, 1);
+
+        if (c.Position == new Coordinate(0, 0) || c.SameDirSteps >= 4) // Part 2
+        {
+            yield return new(c.Position.Neighbor(left), left, 1);
+            yield return new(c.Position.Neighbor(right), right, 1);
+        }
     }
 
     public int MinHeatLoss()
     {
         var lastPos = grid.LastCoordinate();
-        var path = FindShortestPath(new(new(0, 0), Direction.East, 0), s => s.Position == lastPos);
+        // var path = FindShortestPath(new(new(0, 0), Direction.East, 0), s => s.Position == lastPos); // Part 1
+        var path = FindShortestPath(new(new(0, 0), Direction.East, 0), s => s.Position == lastPos && s.SameDirSteps >= 4); // Part 2
         // Debug :)
         foreach (var (a, b) in path.Zip(path.Skip(1)))
             Console.WriteLine($"({a.Position.X},{a.Position.Y}) -{a.Position.DirectionTo(b.Position)}-> ({b.Position.X},{b.Position.Y}), heat={grid.ValueAt(b.Position)}");
