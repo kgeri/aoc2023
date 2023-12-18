@@ -39,12 +39,12 @@ public static class DirectionExtensions
 
 public record Coordinate(int X, int Y)
 {
-    public Coordinate Neighbor(Direction d) => d switch
+    public Coordinate Neighbor(Direction d, int distance = 1) => d switch
     {
-        Direction.North => NeighborNorth(),
-        Direction.South => NeighborSouth(),
-        Direction.East => NeighborEast(),
-        Direction.West => NeighborWest(),
+        Direction.North => new(X, Y - distance),
+        Direction.South => new(X, Y + distance),
+        Direction.East => new(X + distance, Y),
+        Direction.West => new(X - distance, Y),
         _ => throw new NotImplementedException(),
     };
 
@@ -76,6 +76,44 @@ public record Coordinate(int X, int Y)
         if (X == target.X) return Y < target.Y ? Direction.South : Direction.North;
         if (Y == target.Y) return X < target.X ? Direction.East : Direction.West;
         throw new ArgumentException($"Can't determine direction {this} -> {target}");
+    }
+}
+
+public static class Geometry
+{
+
+    public static double ShoelaceArea(this List<Coordinate> coordinates)
+    {
+        double left = 0.0;
+        double right = 0.0;
+        for (int i = 0; i < coordinates.Count; i++)
+        {
+            var a = coordinates[i];
+            var b = coordinates[(i + 1) % coordinates.Count];
+            left += a.X * b.Y;
+            right += b.X * a.Y;
+        }
+        return 0.5 * Math.Abs(left - right);
+    }
+
+    public static double Perimeter(this List<Coordinate> coordinates)
+    {
+        double perimeter = 0.0;
+        for (int i = 0; i < coordinates.Count; i++)
+        {
+            var a = coordinates[i];
+            var b = coordinates[(i + 1) % coordinates.Count];
+            perimeter += Math.Sqrt(Math.Pow(b.X - a.X, 2) + Math.Pow(b.Y - a.Y, 2));
+        }
+        return perimeter;
+    }
+
+    public static double NumberOfInternalPoints(this List<Coordinate> coordinates)
+    {
+        double area = coordinates.ShoelaceArea();
+        double perimeter = coordinates.Perimeter();
+        // From Pick's theorem: https://en.wikipedia.org/wiki/Pick%27s_theorem
+        return area + 1 - perimeter / 2.0;
     }
 }
 
