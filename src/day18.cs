@@ -5,7 +5,8 @@ class Solution
     static void Main(string[] args)
     {
         var instructions = File.ReadAllLines("inputs/day18.txt")
-            .Select(Instruction.Parse)
+            // .Select(Instruction.Parse) // Part 1
+            .Select(Instruction.Parse2) // Part 2
             .ToList();
 
         List<Coordinate> coordinates = [new(0, 0)];
@@ -13,12 +14,12 @@ class Solution
             coordinates.Add(coordinates.Last().Neighbor(ins.Dir, ins.Steps));
         coordinates.RemoveAt(coordinates.Count - 1); // Last value should be the same as the first
 
-        var result1 = coordinates.NumberOfInternalPoints() + coordinates.Perimeter();
-        Console.WriteLine(result1);
+        var result = coordinates.NumberOfInternalPoints() + coordinates.Perimeter();
+        Console.WriteLine(result);
     }
 }
 
-record Instruction(Direction Dir, int Steps, string Color)
+record Instruction(Direction Dir, long Steps, string Color)
 {
     public static Instruction Parse(string line)
     {
@@ -32,5 +33,21 @@ record Instruction(Direction Dir, int Steps, string Color)
             _ => throw new NotImplementedException(),
         };
         return new(dir, int.Parse(parts[1]), parts[2][1..^1]);
+    }
+
+    public static Instruction Parse2(string line)
+    {
+        var parts = line.Split(' ');
+        var distanceAndDir = parts[2][2..^1];
+        long distance = Convert.ToInt32(distanceAndDir[0..5], 16);
+        var dir = distanceAndDir[^1] switch
+        {
+            '3' => Direction.North,
+            '1' => Direction.South,
+            '2' => Direction.West,
+            '0' => Direction.East,
+            _ => throw new NotImplementedException(),
+        };
+        return new(dir, distance, "");
     }
 }

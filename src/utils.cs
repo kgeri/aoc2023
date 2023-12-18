@@ -37,9 +37,9 @@ public static class DirectionExtensions
     };
 }
 
-public record Coordinate(int X, int Y)
+public record Coordinate(long X, long Y)
 {
-    public Coordinate Neighbor(Direction d, int distance = 1) => d switch
+    public Coordinate Neighbor(Direction d, long distance = 1) => d switch
     {
         Direction.North => new(X, Y - distance),
         Direction.South => new(X, Y + distance),

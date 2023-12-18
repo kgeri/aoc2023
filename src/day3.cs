@@ -79,7 +79,7 @@ record Part(Coordinate Start, Coordinate End, int Value)
 
     public IEnumerable<Coordinate> Coordinates()
     {
-        for (int x = Start.X; x <= End.X; x++)
+        for (long x = Start.X; x <= End.X; x++)
         {
             yield return new(x, Start.Y);
         }
