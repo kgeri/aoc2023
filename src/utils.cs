@@ -79,6 +79,27 @@ public record Coordinate(long X, long Y)
     }
 }
 
+public record Range(long Start, long End)
+{
+    public static readonly Range EMPTY = new(0, -1);
+
+    public Range? Intersect(Range range)
+    {
+        if (Start > range.End || End < range.Start) return null;
+        var start = Math.Max(Start, range.Start);
+        var end = Math.Min(End, range.End);
+        return new Range(start, end);
+    }
+
+    public Range LessThanOrEqual(long limit) =>
+        limit < Start ? EMPTY : new(Math.Min(Start, limit), Math.Min(End, limit));
+
+    public Range GreaterThanOrEqual(long limit) =>
+        limit > End ? EMPTY : new(Math.Max(Start, limit), Math.Max(End, limit));
+
+    public long Size() => End - Start + 1;
+}
+
 public static class Geometry
 {
 

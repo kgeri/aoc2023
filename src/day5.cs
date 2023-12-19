@@ -31,17 +31,6 @@ class Solution
     }
 }
 
-record Range(long Start, long End)
-{
-    internal Range? Intersect(Range range)
-    {
-        if (Start > range.End || End < range.Start) return null;
-        var start = Math.Max(Start, range.Start);
-        var end = Math.Min(End, range.End);
-        return new Range(start, end);
-    }
-}
-
 record Mapping(string Name, List<Shift> Shifts)
 {
     public static Mapping Parse(string input)
