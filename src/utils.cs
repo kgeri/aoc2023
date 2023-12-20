@@ -153,7 +153,7 @@ public static class Maths
 {
     public static long LCM(long a, long b)
     {
-        return (a / GCF(a, b)) * b;
+        return a / GCF(a, b) * b;
     }
 
     public static long GCF(long a, long b)

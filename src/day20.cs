@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace aoc2023.day20;
 
 class Solution
@@ -5,20 +7,20 @@ class Solution
     static void Main(string[] args)
     {
         var evaluator = new ModuleEvaluator(File.ReadAllLines("inputs/day20.txt"));
-        for (int i = 0; i < 1000; i++)
-        {
-            evaluator.PushButton();
-        }
-        var result1 = evaluator.GetPulseProduct();
-        Console.WriteLine(result1);
+
+        // Part 1
+        // var result1 = evaluator.GetPulseProduct();
+        // Console.WriteLine(result1);
+
+        // Part 2
+        var result2 = evaluator.CalculateButtonPressesForRxLow();
+        Console.WriteLine(result2);
     }
 }
 
 class ModuleEvaluator
 {
     private readonly Dictionary<string, Module> modules;
-
-    private readonly Dictionary<bool, long> pulses = [];
 
     internal ModuleEvaluator(string[] lines)
     {
@@ -50,34 +52,69 @@ class ModuleEvaluator
                 if (output is Conjunction c) c.AddInput(module);
             }
         }
+    }
 
+    public long GetPulseProduct()
+    {
+        Dictionary<bool, long> pulses = [];
         pulses[true] = 0;
         pulses[false] = 0;
-    }
-
-    public void PushButton()
-    {
-        pulses[false]++; // The initial button press
-
-        Queue<(Module, bool)> steps = [];
-        steps.Enqueue((modules["broadcaster"], false));
-
-        while (steps.TryDequeue(out (Module module, bool signal) step))
+        for (int i = 0; i < 1000; i++)
         {
-            foreach (var om in step.module.outputs)
-            {
-                // Debug :)
-                // Console.WriteLine($"{step.module} -{(step.signal ? "high" : "low")}-> {om}");
+            pulses[false]++; // The initial button press
 
-                pulses[step.signal]++;
-                bool? nextSignal = om.Process(step.module, step.signal);
-                if (nextSignal is null) continue; // Terminated on a FlipFlop
-                steps.Enqueue((om, (bool)nextSignal));
+            Queue<(Module, bool)> steps = [];
+            steps.Enqueue((modules["broadcaster"], false));
+
+            while (steps.TryDequeue(out (Module module, bool signal) step))
+            {
+                foreach (var om in step.module.outputs)
+                {
+                    // Debug :)
+                    // Console.WriteLine($"{step.module} -{(step.signal ? "high" : "low")}-> {om}");
+
+                    pulses[step.signal]++;
+                    bool? nextSignal = om.Process(step.module, step.signal);
+                    if (nextSignal is null) continue; // Terminated on a FlipFlop
+                    steps.Enqueue((om, (bool)nextSignal));
+                }
             }
         }
+        return pulses[true] * pulses[false];
     }
 
-    public long GetPulseProduct() => pulses[true] * pulses[false];
+    internal long CalculateButtonPressesForRxLow()
+    {
+        var rx = modules["rx"];
+        Conjunction rxParent = (Conjunction)modules.Values.Where(m => m.outputs.Contains(rx)).First();
+        HashSet<Module> monitored = [.. rxParent.inputs.Keys];
+        List<long> firsts = [];
+
+        for (int i = 1; monitored.Count > 0; i++)
+        {
+            Queue<(Module, bool)> steps = [];
+            steps.Enqueue((modules["broadcaster"], false));
+
+            while (steps.TryDequeue(out (Module module, bool signal) step))
+            {
+                foreach (var om in step.module.outputs)
+                {
+                    // Debug :)
+                    // Console.WriteLine($"{step.module} -{(step.signal ? "high" : "low")}-> {om}");
+
+                    if (step.signal && om == rxParent && monitored.Remove(step.module))
+                        firsts.Add(i);
+
+                    bool? nextSignal = om.Process(step.module, step.signal);
+                    if (nextSignal is null) continue; // Terminated on a FlipFlop
+
+                    steps.Enqueue((om, (bool)nextSignal));
+                }
+            }
+        }
+
+        return firsts.Aggregate(Maths.LCM);
+    }
 }
 
 abstract class Module(string name)
@@ -109,14 +146,14 @@ class FlipFlop(string name) : Module(name)
 
 class Conjunction(string name) : Module(name)
 {
-    private readonly Dictionary<Module, bool> inputs = [];
+    internal readonly Dictionary<Module, bool> inputs = [];
 
     internal void AddInput(Module module) => inputs[module] = false;
 
     public override bool? Process(Module source, bool signal)
     {
         inputs[source] = signal; // When a pulse is received, the conjunction module first updates its memory for that input
-        return !inputs.Values.All(v => v); // ...f it remembers high pulses for all inputs, it sends a low pulse; otherwise, it sends a high pulse
+        return !inputs.Values.All(v => v); // ...if it remembers high pulses for all inputs, it sends a low pulse; otherwise, it sends a high pulse
     }
 }
 
