@@ -228,6 +228,13 @@ public static class ArrayExtensions
             : default;
     }
 
+    public static Coordinate Wrapped<T>(this T[,] array, Coordinate c)
+    {
+        int w = array.GetLength(1);
+        int h = array.GetLength(0);
+        return new((c.X + w) % w, (c.Y + h) % h);
+    }
+
     public static IEnumerable<Coordinate> Iterate2D<T>(this T[][] array)
     {
         for (int y = 0; y < array.Length; y++)
