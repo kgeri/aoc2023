@@ -48,6 +48,14 @@ public record Coordinate(long X, long Y)
         _ => throw new NotImplementedException(),
     };
 
+    public IEnumerable<Coordinate> Neighbors()
+    {
+        yield return NeighborWest();
+        yield return NeighborNorth();
+        yield return NeighborEast();
+        yield return NeighborSouth();
+    }
+
     public Coordinate NeighborWest() => new(X - 1, Y);
     public Coordinate NeighborNorthWest() => new(X - 1, Y - 1);
     public Coordinate NeighborNorth() => new(X, Y - 1);
@@ -180,6 +188,15 @@ public static class ArrayExtensions
             sb.AppendLine();
         }
         return sb.ToString();
+    }
+
+    public static char[,] ToGrid(this string[] lines)
+    {
+        char[,] grid = new char[lines.Length, lines[0].Length];
+        for (int y = 0; y < grid.GetLength(0); y++)
+            for (int x = 0; x < grid.GetLength(1); x++)
+                grid[y, x] = lines[y][x];
+        return grid;
     }
 
     public static Coordinate LastCoordinate<T>(this T[,] array)

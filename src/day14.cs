@@ -24,10 +24,7 @@ class Dish
 
     internal Dish(string[] lines)
     {
-        grid = new char[lines.Length, lines[0].Length];
-        for (int y = 0; y < grid.GetLength(0); y++)
-            for (int x = 0; x < grid.GetLength(1); x++)
-                grid[y, x] = lines[y][x];
+        grid = lines.ToGrid();
     }
 
     public Dish TiltNorth()
