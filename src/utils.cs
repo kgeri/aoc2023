@@ -87,6 +87,11 @@ public record Coordinate(long X, long Y)
     }
 }
 
+public record Coordinate3D(long X, long Y, long Z)
+{
+    public Coordinate3D Translate(long dx = 0, long dy = 0, long dz = 0) => new(X + dx, Y + dy, Z + dz);
+}
+
 public record Range(long Start, long End)
 {
     public static readonly Range EMPTY = new(0, -1);
