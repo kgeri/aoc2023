@@ -1,6 +1,4 @@
 
-using System.Security.Cryptography;
-
 namespace aoc2023.day22;
 
 class Solution
@@ -9,13 +7,15 @@ class Solution
     {
         var bs = new BrickSimulator(File.ReadAllLines("inputs/day22.txt")
             .Select(l => new Brick(l)));
-
         bs.DropAll();
+
+        // Part 1
         var result1 = bs.CalculateSafeToRemove();
         Console.WriteLine(result1);
 
-        // 964 too high
-        // 500 too high
+        // Part 2
+        var result2 = bs.CalculateChainReaction();
+        Console.WriteLine(result2);
     }
 }
 
@@ -96,6 +96,31 @@ class BrickSimulator
             }
         }
         return result;
+    }
+
+    public int CalculateChainReaction()
+    {
+        Dictionary<Brick, List<Brick>> supportedBy = CalculateSupports();
+        void calculateFallen(Brick brick, HashSet<Brick> fallen)
+        {
+            foreach (var sb in supportedBy[brick])
+            {
+                if (supportedBy.Any(kv => kv.Key != brick && !fallen.Contains(kv.Key) && kv.Value.Contains(sb)))
+                    continue; // Something else still supports sb
+                fallen.Add(sb);
+                calculateFallen(sb, fallen);
+            }
+        }
+
+        int count = 0;
+        foreach (var brick in bricks)
+        {
+            if (brick == FLOOR) continue;
+            HashSet<Brick> fallen = [];
+            calculateFallen(brick, fallen);
+            count += fallen.Count;
+        }
+        return count;
     }
 
     private Dictionary<Brick, List<Brick>> CalculateSupports()
