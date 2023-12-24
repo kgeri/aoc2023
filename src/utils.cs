@@ -85,11 +85,15 @@ public record Coordinate(long X, long Y)
         if (Y == target.Y) return X < target.X ? Direction.East : Direction.West;
         throw new ArgumentException($"Can't determine direction {this} -> {target}");
     }
+
+    public override string ToString() => $"({X},{Y})";
 }
 
 public record Coordinate3D(long X, long Y, long Z)
 {
     public Coordinate3D Translate(long dx = 0, long dy = 0, long dz = 0) => new(X + dx, Y + dy, Z + dz);
+
+    public override string ToString() => $"({X},{Y},{Z})";
 }
 
 public record Range(long Start, long End)
