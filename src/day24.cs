@@ -8,6 +8,10 @@ class Solution
 
         var result1 = tester.NumberOfIntersections();
         Console.WriteLine(result1);
+
+        var rc = tester.CalculateIdealRockCoordinate();
+        var result2 = rc.X + rc.Y + rc.Z;
+        Console.WriteLine(result2);
     }
 }
 
@@ -49,12 +53,63 @@ class HailstoneTester
 
         return count;
     }
+
+    public Coordinate3D CalculateIdealRockCoordinate()
+    {
+        // Disclaimer: not my idea, but at least one I understand and doesn't require the use of a linalg solver
+        // Kudos to: https://www.reddit.com/user/Smooth-Aide-1751/
+        Hail h1 = hails[0];
+        Hail h2 = hails[1];
+
+        int range = 500;
+        for (int vx = -range; vx < range; vx++)
+        {
+            Console.WriteLine($"Progress: {(vx + range) * 50 / range}%");
+            for (int vy = -range; vy < range; vy++)
+                for (int vz = -range; vz < range; vz++)
+                {
+                    if (vx == 0 || vy == 0 || vz == 0) continue;
+
+                    long A = h1.position.X, a = h1.speed.X - vx;
+                    long B = h1.position.Y, b = h1.speed.Y - vy;
+                    long C = h2.position.X, c = h2.speed.X - vx;
+                    long D = h2.position.Y, d = h2.speed.Y - vy;
+
+                    // skip if division by 0
+                    if (c == 0 || (a * d) - (b * c) == 0) continue;
+
+                    // Rock intercepts H1 at time t
+                    long t = (d * (C - A) - c * (D - B)) / ((a * d) - (b * c));
+
+                    // Calculate starting position of rock from intercept point
+                    long x = h1.position.X + h1.speed.X * t - vx * t;
+                    long y = h1.position.Y + h1.speed.Y * t - vy * t;
+                    long z = h1.position.Z + h1.speed.Z * t - vz * t;
+
+                    // check if this rock throw will hit all hailstones
+                    bool hitall = hails.All(h =>
+                    {
+                        long hx = h.position.X, hy = h.position.Y, hz = h.position.Z;
+                        long hvx = h.speed.X, hvy = h.speed.Y, hvz = h.speed.Z;
+                        long u;
+                        if (hvx != vx) u = (x - hx) / (hvx - vx);
+                        else if (hvy != vy) u = (y - hy) / (hvy - vy);
+                        else if (hvz != vz) u = (z - hz) / (hvz - vz);
+                        else throw new NotSupportedException();
+                        return (x + u * vx == hx + u * hvx) && (y + u * vy == hy + u * hvy) && (z + u * vz == hz + u * hvz);
+                    });
+
+                    if (hitall) return new(x, y, z);
+                }
+        }
+        throw new Exception("No solution found");
+    }
 }
 
 class Hail
 {
-    private readonly Coordinate3D position;
-    private readonly Coordinate3D speed;
+    internal readonly Coordinate3D position;
+    internal readonly Coordinate3D speed;
 
     internal Hail(string line)
     {
